@@ -96,63 +96,67 @@ This document establishes universal development rules, coding standards, pedagog
 
 - **Preserve `README.md`:** Keep `README.md` as the authoritative project specification, overview, and reference. Do not overwrite or dilute original requirements.
 - **Ultra-Simple Linear Execution Flow (`SIMPLE_FLOW.md`):**
-  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is essentially passing data through a sequence of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, comfortable-to-read vertical trace showing **which layer/function executes next, what data looks like, what it checks or validates, happy vs. error/exit-early paths, and where it lives in the codebase**.
-  - **Strict Format (Vertical Chain with Badges, Arrows & Error Paths):**
-    - **Never write long horizontal paragraphs.** Format each step vertically with connector arrows (`⬇`), layer tags (`Handler`, `Service`, `Repository`, etc.), bold function names, and code-styled file locations.
-    - Under each step, include concise bullet points:
-      - `• **Does:** [action summary]`
-      - `• ❌ **If Error / Exit Early:** [condition ➔ HTTP status/error returned]`
-      - `• ✅ **If Success / Passes:** [data shape passed forward]`
-    - Include a quick **Outcome Summary** (success vs failure HTTP responses) at the end of each flow.
+  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is passing data through a sequence of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, step-by-step vertical trace showing **which layer/function executes next, what data looks like, what it checks or validates, happy vs. error/exit-early paths, and where it lives in the codebase**.
+  - **Strict Markdown Formatting (1 Step Per Line on Web, No Emojis):**
+    - **Never write long continuous paragraphs.** Use strict markdown bullet lists (`- **Step X [Layer]:**`) so every step and sub-item renders on its own separate line on GitHub and web viewers.
+    - **Zero Emojis:** Do not use unicode emojis. Use clean ASCII symbols:
+      - Connector arrow: `-->`
+      - Success / Passed: `[v]`
+      - Error / Exit Early: `[x]`
+    - Under each step, include indented sub-bullets:
+      - `- **Does:** [action summary]`
+      - `- **[x] If Error / Exit Early:** [condition --> HTTP status/error returned]`
+      - `- **[v] If Success / Passes:** [data shape passed forward]`
+    - Include a final `**Outcome:**` line at the end of each flow.
   - **Continuous Updates:** Whenever a new route, feature, or function call chain is added or modified, immediately update `SIMPLE_FLOW.md`.
   - **Standard Template & Examples:**
 
     ```markdown
     ### App Startup Flow
 
-    `Entrypoint` ➔ **`main()`** `[main.go]`
-      • **Does:** Initiates application boot sequence.
-      ⬇
-    `Config` ➔ **`config.LoadEnv()`** `[config/config.go]`
-      • **Does:** Reads `.env` for `PORT` and `DB_URL` (falls back to `localhost:5432` if missing).
-      • ✅ **Passes:** `cfg`
-      ⬇
-    `Database` ➔ **`db.Connect(cfg.DBUrl)`** `[db/db.go]`
-      • **Does:** Opens PostgreSQL connection pool and pings DB.
-      • ❌ **If DB Down:** Logs fatal error & terminates process.
-      • ✅ **If Connected:** Passes `dbPool`
-      ⬇
-    `Router` ➔ **`routes.NewRouter(dbPool)`** `[routes/routes.go]`
-      • **Does:** Attaches middleware (logging, CORS) and registers HTTP handlers.
-      • ✅ **Passes:** `router`
-      ⬇
-    `Server` ➔ **`http.ListenAndServe(cfg.Port, router)`**
-      • 🏁 **Outcome:** Server actively listens for HTTP requests on port `:8080`.
+    - **Step 1 [Entrypoint]:** `main()` `[main.go]`
+      - **Does:** Initiates application boot sequence.
+      -->
+    - **Step 2 [Config]:** `config.LoadEnv()` `[config/config.go]`
+      - **Does:** Reads `.env` for `PORT` and `DB_URL` (falls back to `localhost:5432` if missing).
+      - **[v] Passes:** `cfg`
+      -->
+    - **Step 3 [Database]:** `db.Connect(cfg.DBUrl)` `[db/db.go]`
+      - **Does:** Opens PostgreSQL connection pool and pings DB.
+      - **[x] If DB Down:** Logs fatal error and terminates process.
+      - **[v] If Connected:** Passes `dbPool`
+      -->
+    - **Step 4 [Router]:** `routes.NewRouter(dbPool)` `[routes/routes.go]`
+      - **Does:** Attaches middleware (logging, CORS) and registers HTTP handlers.
+      - **[v] Passes:** `router`
+      -->
+    - **Step 5 [Server]:** `http.ListenAndServe(cfg.Port, router)`
+      - **Outcome:** Server actively listens for HTTP requests on port `:8080`.
     ```
 
     ```markdown
     ### Feature Flow: User Registration (`POST /register`)
 
-    `Client Request` ➔ **POST /register** `{"name": "Farhan", "email": "f@test.com", "password": "123"}`
-      ⬇
-    `Handler` ➔ **`handlers.UsersHandler.Register`** `[handlers/users.go]`
-      • **Does:** Decodes JSON request body and validates non-empty fields.
-      • ❌ **On Malformed JSON / Missing Field:** Returns **HTTP 400 Bad Request** `{"error": "invalid payload"}` (Flow ends here).
-      • ✅ **On Valid Input:** Passes `(name, email, password)`
-      ⬇
-    `Service` ➔ **`services.UserService.RegisterUser`** `[services/user_service.go]`
-      • **Does:** Checks if email exists in DB. Calls **`utils.HashPassword()`** to hash password with bcrypt (cost 10).
-      • ❌ **If Email Already Taken:** Returns **HTTP 409 Conflict** `{"error": "email already in use"}` (Flow ends here).
-      • ✅ **If Available:** Passes `(name, email, hashedPassword)`
-      ⬇
-    `Repository` ➔ **`repositories.UserRepository.CreateUser`** `[repos/user_repo.go]`
-      • **Does:** Executes SQL `INSERT INTO users (name, email, password_hash) VALUES (...) RETURNING id`.
-      • ❌ **On Database Failure:** Returns **HTTP 500 Internal Server Error** (Flow ends here).
-      • ✅ **On Successful Insert:** Returns `savedUser` record `User{ID: 1, Name: "Farhan", Email: "f@test.com"}`
-      ⬇
-    `Response` ➔ **`presenters.ToUserResponse`** `[presenters/user.go]`
-      • **Does:** Strips sensitive password hash and formats JSON DTO.
-      • 🏁 **Outcome:** Writes **HTTP 201 Created** `{"id": 1, "name": "Farhan", "email": "f@test.com"}` back to client.
+    - **Step 1 [Client Request]:** `POST /register` with payload `{"name": "Farhan", "email": "f@test.com", "password": "123"}`
+      -->
+    - **Step 2 [Handler]:** `handlers.UsersHandler.Register` `[handlers/users.go]`
+      - **Does:** Decodes JSON request body and validates non-empty fields.
+      - **[x] On Malformed JSON / Missing Field:** Returns `HTTP 400 Bad Request` `{"error": "invalid payload"}` (Flow ends here).
+      - **[v] On Valid Input:** Passes `(name, email, password)`
+      -->
+    - **Step 3 [Service]:** `services.UserService.RegisterUser` `[services/user_service.go]`
+      - **Does:** Checks if email exists in DB. Calls `utils.HashPassword()` to hash password with bcrypt (cost 10).
+      - **[x] If Email Already Taken:** Returns `HTTP 409 Conflict` `{"error": "email already in use"}` (Flow ends here).
+      - **[v] If Available:** Passes `(name, email, hashedPassword)`
+      -->
+    - **Step 4 [Repository]:** `repositories.UserRepository.CreateUser` `[repos/user_repo.go]`
+      - **Does:** Executes SQL `INSERT INTO users (name, email, password_hash) VALUES (...) RETURNING id`.
+      - **[x] On Database Failure:** Returns `HTTP 500 Internal Server Error` (Flow ends here).
+      - **[v] On Successful Insert:** Returns `savedUser` record `User{ID: 1, Name: "Farhan", Email: "f@test.com"}`
+      -->
+    - **Step 5 [Response]:** `presenters.ToUserResponse` `[presenters/user.go]`
+      - **Does:** Strips sensitive password hash and formats JSON DTO.
+      - **Outcome:** Writes `HTTP 201 Created` with `{"id": 1, "name": "Farhan", "email": "f@test.com"}` back to client.
     ```
 - **Continuous System Documentation (`FLOW.md`):** Update or create `FLOW.md` whenever a feature is introduced or modified:
   - **How to Use:** Clear setup instructions, environment configurations, and run commands.
