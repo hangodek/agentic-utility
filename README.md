@@ -16,6 +16,6 @@ curl -fsSL https://raw.githubusercontent.com/hangodek/agentic-utility/main/learn
 - **Learning-Oriented Agent Guidelines:** Mentorship principles, mental model breakdowns, data flow traces, and anti-pattern warnings.
 - **Git Policy:** Conventional Commits standard with zero autonomous pushes.
 - **Architecture Conventions:** Separation of Concerns (*"Skinny Everything"*), explicit call paths, and layer definitions.
-- **Pedagogical Standards:** In-code intent annotations, living glossary (`DICTIONARY.md`), and system lifecycle documentation (`FLOW.md`).
+- **Pedagogical Standards:** In-code intent annotations, living glossary (`DICTIONARY.md`), linear execution chains (`SIMPLE_FLOW.md`), and system lifecycle documentation (`FLOW.md`).
 - **TDD Workflow:** Red-Green-Refactor as an educational tool.
 

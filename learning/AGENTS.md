@@ -92,14 +92,27 @@ This document establishes universal development rules, coding standards, pedagog
 
 ---
 
-## 6. Documentation Maintenance (`FLOW.md` & `README.md`)
+## 6. Documentation Maintenance (`README.md`, `SIMPLE_FLOW.md`, `FLOW.md`)
 
 - **Preserve `README.md`:** Keep `README.md` as the authoritative project specification, overview, and reference. Do not overwrite or dilute original requirements.
+- **Ultra-Simple Linear Execution Flow (`SIMPLE_FLOW.md`):**
+  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is essentially passing data through a chain of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, step-by-step linear trace explaining **how each step triggers the next, what each function checks or reads (including fallbacks), what data is passed forward, and which function processes it next**, so the user can effortlessly trace the entire journey.
+  - **Strict Format:** **Plain text only, zero complex diagrams, zero ASCII art, only linear step chains connected by `>`**.
+  - **In-Chain Explanations:** Every step in the chain must include:
+    1. The function or action triggered + location (e.g., `config.LoadEnv() [config/config.go]`).
+    2. A brief, plain-English explanation of what it does (what it reads, checks, validates, or falls back to).
+    3. The data or result passed to the next step.
+  - **Continuous Updates:** Whenever a new route, feature, or function call chain is added or modified, immediately update `SIMPLE_FLOW.md`.
+  - **Standard Format Examples:**
+    - **App Startup Flow:**
+      `go run main.go [main.go] > triggers config.LoadEnv() [config/config.go] (reads .env for PORT and DB_URL; if missing, falls back to default localhost:5432) -> returns cfg > calls db.Connect(cfg.DBUrl) [db/db.go] (opens PostgreSQL connection pool and pings DB to verify connection) -> returns dbPool > calls routes.NewRouter(dbPool) [routes/routes.go] (registers HTTP routes and attaches middleware) -> returns router > passes router to http.ListenAndServe(cfg.Port, router) > server starts listening for incoming requests on port 8080`
+    - **Feature Request Flow (e.g., User Registration):**
+      `User sends POST /register with JSON {name, email, password} > router matches route and calls handlers.UsersHandler.Register(w, r) [handlers/users.go] (decodes JSON request body and validates that fields are non-empty) -> passes (name, email, password) > calls services.UserService.RegisterUser(name, email, password) [services/user_service.go] (checks if email already exists in DB; if taken, returns error; if not, prepares user) > calls utils.HashPassword(password) [utils/hash.go] (runs bcrypt hashing with cost 10) -> returns hashedPassword > calls repositories.UserRepository.CreateUser(name, email, hashedPassword) [repos/user_repo.go] (executes SQL INSERT query into 'users' table) -> returns savedUser record with generated ID > calls presenters.ToUserResponse(savedUser) [presenters/user.go] (strips sensitive hash and formats response payload) -> returns JSON DTO > handler writes HTTP 201 Created with JSON {id, name, email} back to user`
 - **Continuous System Documentation (`FLOW.md`):** Update or create `FLOW.md` whenever a feature is introduced or modified:
   - **How to Use:** Clear setup instructions, environment configurations, and run commands.
   - **Architecture & Layer Map:** System layers, directory structure, and component boundaries.
   - **Schema & Data Models:** Database tables, relations, and data structures (with entity diagrams where helpful).
-  - **Flow & Sequence (Learning Lifecycles):** End-to-end user journeys, request-response lifecycles, and data transformations (with clear ASCII or Mermaid diagrams).
+  - **Flow & Sequence (Learning Lifecycles):** End-to-end user journeys, request-response lifecycles, and data transformations.
 - **Simplicity & Clarity:** Keep all documentation, markdown files, and explanations ultra-simple, clear, and beginner-accessible (simple enough for anyone to grasp immediately). Avoid bloat and overly verbose text.
 
 ---
