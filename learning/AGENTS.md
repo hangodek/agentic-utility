@@ -96,67 +96,68 @@ This document establishes universal development rules, coding standards, pedagog
 
 - **Preserve `README.md`:** Keep `README.md` as the authoritative project specification, overview, and reference. Do not overwrite or dilute original requirements.
 - **Ultra-Simple Linear Execution Flow (`SIMPLE_FLOW.md`):**
-  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is passing data through a sequence of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, step-by-step vertical trace showing **which layer/function executes next, what data looks like, what it checks or validates, happy vs. error/exit-early paths, and where it lives in the codebase**.
-  - **Strict Markdown Formatting (1 Step Per Line on Web, No Emojis):**
-    - **Never write long continuous paragraphs.** Use strict markdown bullet lists (`- **Step X [Layer]:**`) so every step and sub-item renders on its own separate line on GitHub and web viewers.
-    - **Zero Emojis:** Do not use unicode emojis. Use clean ASCII symbols:
-      - Connector arrow: `-->`
-      - Success / Passed: `[v]`
-      - Error / Exit Early: `[x]`
-    - Under each step, include indented sub-bullets:
-      - `- **Does:** [action summary]`
-      - `- **[x] If Error / Exit Early:** [condition --> HTTP status/error returned]`
-      - `- **[v] If Success / Passes:** [data shape passed forward]`
-    - Include a final `**Outcome:**` line at the end of each flow.
-  - **Continuous Updates:** Whenever a new route, feature, or function call chain is added or modified, immediately update `SIMPLE_FLOW.md`.
-  - **Standard Template & Examples:**
+  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is passing data through a chain of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, step-by-step trace showing **how every piece of code connects and operates, leaving zero functions or helpers undocumented**.
+  - **100% Exhaustive Function Coverage (No Skipped Functions):**
+    - **Every single function, helper, event listener, parser, and setup utility in the codebase must be explicitly documented in the flow.**
+    - Setup routines, input listeners (e.g., `setupInputHandler`, `cleanup` callbacks), validation helpers, formatters, and state initializers cannot be skipped.
+  - **Dual-Mode Structure for Every Flow:**
+    `SIMPLE_FLOW.md` must include two complementary sections for each major workflow/feature:
+    1. **Part 1: The Step-by-Step Technical Chain (Code-Level):**
+       - Strict markdown bullet list (`- **Step X [Function/Layer]:**`) so each step renders on its own line on the web.
+       - Clean ASCII indicators: `-->` for next step, `[v]` for success/passes, `[x]` for error/exit early.
+       - Shows exact function names, file paths, what data is checked/passed, and error branches.
+    2. **Part 2: The Plain-Language Human Walkthrough (Story-Level):**
+       - Located directly underneath the technical steps.
+       - Explains how the entire program works in natural, conversational human language (like a senior engineer explaining to a beginner), describing user actions, what functions get triggered, what variables change, and how everything connects.
+  - **Continuous Updates:** Whenever a new route, feature, function, or helper is added or modified, immediately update `SIMPLE_FLOW.md`.
+  - **Standard Template & Example:**
 
     ```markdown
-    ### App Startup Flow
+    ### Feature Flow: Terminal Dungeon Game (`node main.js <skill>`)
 
-    - **Step 1 [Entrypoint]:** `main()` `[main.go]`
-      - **Does:** Initiates application boot sequence.
+    #### Part 1: Step-by-Step Technical Flow
+    - **Step 1 [Entrypoint]:** `main()` `[main.js]`
+      - **Does:** Starts the program and orchestrates game initialization.
       -->
-    - **Step 2 [Config]:** `config.LoadEnv()` `[config/config.go]`
-      - **Does:** Reads `.env` for `PORT` and `DB_URL` (falls back to `localhost:5432` if missing).
-      - **[v] Passes:** `cfg`
+    - **Step 2 [CLI Argument Parsing]:** `parseSkillArg()` `[main.js]`
+      - **Does:** Reads `process.argv[2]` and validates against allowed skills (`ulti`, `regen`).
+      - **[x] If Invalid / Missing:** Logs error message and exits program (`return null`).
+      - **[v] If Valid:** Returns `selectedSkill` (e.g., `"ulti"`).
       -->
-    - **Step 3 [Database]:** `db.Connect(cfg.DBUrl)` `[db/db.go]`
-      - **Does:** Opens PostgreSQL connection pool and pings DB.
-      - **[x] If DB Down:** Logs fatal error and terminates process.
-      - **[v] If Connected:** Passes `dbPool`
+    - **Step 3 [State Initialization]:** `createInitialState(selectedSkill)` `[main.js]`
+      - **Does:** Builds initial `gameState` object `{heroHp: 100, currentStage: 0, skill, status: "PREPARATION", monsters: []}`.
+      - **Helper Triggered:** Calls `generateMonster()` 10 times to pre-populate stage monsters (30% chance for `BIG` monster 'M' with 2 HP, 70% standard 'm' with 1 HP).
+      - **[v] Passes:** `gameState`
       -->
-    - **Step 4 [Router]:** `routes.NewRouter(dbPool)` `[routes/routes.go]`
-      - **Does:** Attaches middleware (logging, CORS) and registers HTTP handlers.
-      - **[v] Passes:** `router`
+    - **Step 4 [Initial Screen Render]:** `renderScreen(gameState)` `[main.js]`
+      - **Does:** Clears console screen with `console.clear()`.
+      - **Helper Triggered:** Calls `renderDungeonTrack(gameState)` to format the 10-slot dungeon track `|   |   | ... |`.
+      - **[v] Output:** Prints header `"Here Ready to Go"`, HP indicator, and empty preparation track to terminal.
       -->
-    - **Step 5 [Server]:** `http.ListenAndServe(cfg.Port, router)`
-      - **Outcome:** Server actively listens for HTTP requests on port `:8080`.
-    ```
+    - **Step 5 [Input Listener Setup]:** `setupInputHandler(onKeyPress)` `[main.js]`
+      - **Does:** Configures `process.stdin` (sets UTF-8 encoding, enables raw mode if TTY, resumes stream) and attaches `data` event listener `handleInput`.
+      - **[v] Returns:** `cleanupInput` function closure to allow restoring terminal state.
+      -->
+    - **Step 6 [Interactive Event Loop / Key Press]:** User presses keyboard keys
+      - **Branch A [Key is SPACE (' ')]:**
+        - Calls `handleSpacebarAction(gameState)`:
+          - If status is `PREPARATION`: Advances status to `BATTLE` and sets `currentStage = 1`.
+          - If status is `BATTLE`: Deducts 7 HP (`heroHp - 7`). If `heroHp == 0` or `currentStage >= 10`, sets status to `RESULT`; otherwise advances `currentStage += 1`.
+        - Calls `renderScreen(gameState)`: Redraws terminal with updated HP, stage counter, and active battle slot `| H vs m |`.
+      - **Branch B [Key is 'q']:**
+        - Calls `cleanupInput()`: Sets `isListening = false`, detaches `stdin.off("data")`, disables raw mode, pauses stream, and exits.
+      -->
+    - **Step 7 [Final Outcome]:**
+      - **Outcome:** Player either defeats all 10 monsters and reaches `Final Result` screen, dies at `HP: 0`, or cleanly quits with `q`.
 
-    ```markdown
-    ### Feature Flow: User Registration (`POST /register`)
-
-    - **Step 1 [Client Request]:** `POST /register` with payload `{"name": "Farhan", "email": "f@test.com", "password": "123"}`
-      -->
-    - **Step 2 [Handler]:** `handlers.UsersHandler.Register` `[handlers/users.go]`
-      - **Does:** Decodes JSON request body and validates non-empty fields.
-      - **[x] On Malformed JSON / Missing Field:** Returns `HTTP 400 Bad Request` `{"error": "invalid payload"}` (Flow ends here).
-      - **[v] On Valid Input:** Passes `(name, email, password)`
-      -->
-    - **Step 3 [Service]:** `services.UserService.RegisterUser` `[services/user_service.go]`
-      - **Does:** Checks if email exists in DB. Calls `utils.HashPassword()` to hash password with bcrypt (cost 10).
-      - **[x] If Email Already Taken:** Returns `HTTP 409 Conflict` `{"error": "email already in use"}` (Flow ends here).
-      - **[v] If Available:** Passes `(name, email, hashedPassword)`
-      -->
-    - **Step 4 [Repository]:** `repositories.UserRepository.CreateUser` `[repos/user_repo.go]`
-      - **Does:** Executes SQL `INSERT INTO users (name, email, password_hash) VALUES (...) RETURNING id`.
-      - **[x] On Database Failure:** Returns `HTTP 500 Internal Server Error` (Flow ends here).
-      - **[v] On Successful Insert:** Returns `savedUser` record `User{ID: 1, Name: "Farhan", Email: "f@test.com"}`
-      -->
-    - **Step 5 [Response]:** `presenters.ToUserResponse` `[presenters/user.go]`
-      - **Does:** Strips sensitive password hash and formats JSON DTO.
-      - **Outcome:** Writes `HTTP 201 Created` with `{"id": 1, "name": "Farhan", "email": "f@test.com"}` back to client.
+    #### Part 2: Plain Human-Language Walkthrough
+    In simple terms, here is what happens when you run and play the game:
+    1. When you run `node main.js ulti`, the game first runs `parseSkillArg` to make sure you passed a valid skill name. If you forgot the skill, it prints an error and stops immediately.
+    2. Once verified, `createInitialState` sets up the starting game world. Behind the scenes, it calls `generateMonster` 10 times to randomly generate monsters for all 10 stages (with a 30% chance for a strong 2 HP monster 'M').
+    3. Next, `renderScreen` clears your terminal and uses `renderDungeonTrack` to draw the starting UI showing your 100 HP and an empty 10-slot track.
+    4. To listen to your keypresses in real-time without needing to press ENTER, `setupInputHandler` turns on raw mode on your terminal and begins listening for incoming keystrokes.
+    5. When you press **SPACEBAR**, `handleSpacebarAction` moves you from preparation into Stage 1. On every subsequent SPACEBAR hit, your hero attacks the monster, takes 7 damage, and steps forward into the next stage. After each hit, `renderScreen` immediately redraws the screen to show your new HP and the updated battle position (`| H vs m |`).
+    6. If your HP drops to 0 or you clear stage 10, the game switches to the final result screen. If you press **'q'**, the `cleanupInput` function safely turns off raw mode on your terminal and exits cleanly.
     ```
 - **Continuous System Documentation (`FLOW.md`):** Update or create `FLOW.md` whenever a feature is introduced or modified:
   - **How to Use:** Clear setup instructions, environment configurations, and run commands.
