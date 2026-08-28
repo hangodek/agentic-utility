@@ -37,6 +37,7 @@ This document establishes universal development rules, coding standards, pedagog
 ## 3. Git & Version Control Policy
 
 - **No Autonomous Commits/Pushes:** **DO NOT** run `git commit` or `git push` automatically under any circumstance. Only execute Git commands when explicitly prompted by the user.
+- **"cp" Shorthand Trigger:** When the user prompts with **`cp`** (e.g., `"cp"`, `"please cp"`, `"cp this project"`), immediately treat it as an explicit instruction to **commit and push** all staged/relevant changes with an appropriate Conventional Commit message.
 - **Conventional Commits Standard:** When instructed to commit, always format commit messages according to Conventional Commits:
   - `feat:` New features or functionality (e.g., `feat: add user authentication flow`)
   - `fix:` Bug fixes (e.g., `fix: resolve nil pointer on token validation`)
