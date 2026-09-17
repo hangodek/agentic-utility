@@ -41,7 +41,7 @@ This document establishes universal development rules, coding standards, pedagog
 - **Conventional Commits Standard:** When instructed to commit, always format commit messages according to Conventional Commits:
   - `feat:` New features or functionality (e.g., `feat: add user authentication flow`)
   - `fix:` Bug fixes (e.g., `fix: resolve nil pointer on token validation`)
-  - `docs:` Documentation updates (e.g., `docs: update FLOW.md architecture diagram`)
+  - `docs:` Documentation updates (e.g., `docs: update README setup guide`)
   - `refactor:` Code changes that neither fix a bug nor add a feature (e.g., `refactor: extract query builder into service`)
   - `test:` Adding or updating tests (e.g., `test: add unit tests for slug generator`)
   - `chore:` Maintenance, configuration, or dependency updates (e.g., `chore: update dependencies`)
@@ -68,118 +68,38 @@ This document establishes universal development rules, coding standards, pedagog
 
 ## 5. Inline Code Comments & Standards
 
-- **Top-Level Function & Type Block Comments:**
-  - For every significant struct, type, constructor, and top-level function, include a concise comment block explaining:
-    - **Why:** The purpose, mental model, and rationale of the component.
-    - **How & Correlation:** How it interacts with surrounding layers (e.g., database, templates, callers).
-    - **Trade-offs:** Any notable constraints, memory characteristics, or edge cases.
-- **Helper Function Location References & Intent Comments:**
-  - Whenever calling an internal helper function, include a brief inline comment indicating:
-    1. Its definition location: `[defined below: functionName]` or `[path/to/file.go: functionName]`.
-    2. A 1-line plain-language summary of what it does.
-    - *Example:*
-
-      ```go
-      // [defined below: h.validate] Validates name, email format, and min 8-char password
-      if errMsg := h.validate(name, email, password); errMsg != "" {
-          ...
-      }
-      ```
-
-- **Standard Library & Built-in Intent Comments:**
-  - When calling standard library functions or language idioms whose behavior may not be immediately obvious (e.g., Go's `r.ParseForm()`, `http.MaxBytesReader(...)`, `defer`, channel operations; Python's `yield`, decorators; JS closures, `Promise.all`), include a short 1-line comment directly above describing what it achieves under the hood.
-  - *Keep all comments concise, pedagogical, readable, and practical without fluff.*
+- **Focus on Intent & Mechanics (Keep It Simple):**
+  - Avoid heavy, bloated multi-paragraph comments. Explain *why* something is done or any subtle mechanic in 1–2 plain-language lines.
+  - Do not state the obvious (e.g., avoid comments like `// increment i by 1`). Focus on intent, assumptions, and non-obvious behavior.
+- **Top-Level Definitions:**
+  - Provide a brief 1–2 line summary above key structs, classes, or exported functions explaining their core role.
+- **Unfamiliar Functions & Idioms:**
+  - When using standard library idioms or syntax that might trip up a learner (e.g., Go channels/defer, Python generators, JS closures), add a brief 1-line note explaining what it achieves under the hood.
+- **Ponytail Debt Markers:**
+  - When making deliberate simplifications with a known ceiling or future upgrade path, mark them with a clean `ponytail:` comment (e.g., `// ponytail: in-memory slice, upgrade to DB when persistent storage needed`).
 
 ---
 
-## 6. Documentation Maintenance (`README.md`, `SIMPLE_FLOW.md`, `FLOW.md`)
+## 6. Lean Code Discipline (Ponytail)
+
+- **The Ladder (YAGNI & Simplicity First):**
+  1. **Does this need to exist?** Speculative need = skip it. Build only what is needed right now.
+  2. **Already in this codebase?** Reuse existing helpers, types, or utilities instead of re-implementing them.
+  3. **Standard library does it?** Prefer the built-in standard library over third-party dependencies.
+  4. **Native platform feature covers it?** Use native platform capabilities first (e.g., native HTML elements, CSS, database constraints).
+  5. **Can it be simpler / one line?** Prefer the most direct, boring, readable implementation.
+  6. **Minimum code that works:** Avoid unrequested abstractions, boilerplate "for later", single-implementation interfaces, and speculative factory layers.
+- **Bug Fix = Root Cause:**
+  - Fix the underlying cause once at the source rather than patching symptoms across multiple call sites.
+- **Shortcut Tracking:**
+  - Mark intentional shortcuts or temporary constraints with a `ponytail:` comment naming the ceiling and the clear upgrade path.
+
+---
+
+## 7. Documentation Maintenance (`README.md`)
 
 - **Preserve `README.md`:** Keep `README.md` as the authoritative project specification, overview, and reference. Do not overwrite or dilute original requirements.
-- **Ultra-Simple Linear Execution Flow (`SIMPLE_FLOW.md`):**
-  - **Purpose & Core Philosophy:** Maintain a `SIMPLE_FLOW.md` at the project root. Programming is passing data through a chain of functions. `SIMPLE_FLOW.md` must provide a crystal-clear, step-by-step trace showing **how every piece of code connects and operates, leaving zero functions or helpers undocumented**.
-  - **100% Exhaustive Function Coverage (No Skipped Functions):**
-    - **Every single function, helper, event listener, parser, and setup utility in the codebase must be explicitly documented in the flow.**
-    - Setup routines, input listeners (e.g., `setupInputHandler`, `cleanup` callbacks), validation helpers, formatters, and state initializers cannot be skipped.
-  - **Dual-Mode Structure for Every Flow:**
-    `SIMPLE_FLOW.md` must include two complementary sections for each major workflow/feature:
-    1. **Part 1: The Step-by-Step Technical Chain (Code-Level):**
-       - Strict markdown bullet list (`- **Step X [Function/Layer]:**`) so each step renders on its own line on the web.
-       - Clean ASCII indicators: `-->` for next step, `[v]` for success/passes, `[x]` for error/exit early.
-       - Shows exact function names, file paths, what data is checked/passed, and error branches.
-    2. **Part 2: The Plain-Language Human Walkthrough (Story-Level):**
-       - Located directly underneath the technical steps.
-       - Explains how the entire program works in natural, conversational human language (like a senior engineer explaining to a beginner), describing user actions, what functions get triggered, what variables change, and how everything connects.
-  - **Continuous Updates:** Whenever a new route, feature, function, or helper is added or modified, immediately update `SIMPLE_FLOW.md`.
-  - **Standard Template & Example:**
-
-    ```markdown
-    ### Feature Flow: Terminal Dungeon Game (`node main.js <skill>`)
-
-    #### Part 1: Step-by-Step Technical Flow
-    - **Step 1 [Entrypoint]:** `main()` `[main.js]`
-      - **Does:** Starts the program and orchestrates game initialization.
-      -->
-    - **Step 2 [CLI Argument Parsing]:** `parseSkillArg()` `[main.js]`
-      - **Does:** Reads `process.argv[2]` and validates against allowed skills (`ulti`, `regen`).
-      - **[x] If Invalid / Missing:** Logs error message and exits program (`return null`).
-      - **[v] If Valid:** Returns `selectedSkill` (e.g., `"ulti"`).
-      -->
-    - **Step 3 [State Initialization]:** `createInitialState(selectedSkill)` `[main.js]`
-      - **Does:** Builds initial `gameState` object `{heroHp: 100, currentStage: 0, skill, status: "PREPARATION", monsters: []}`.
-      - **Helper Triggered:** Calls `generateMonster()` 10 times to pre-populate stage monsters (30% chance for `BIG` monster 'M' with 2 HP, 70% standard 'm' with 1 HP).
-      - **[v] Passes:** `gameState`
-      -->
-    - **Step 4 [Initial Screen Render]:** `renderScreen(gameState)` `[main.js]`
-      - **Does:** Clears console screen with `console.clear()`.
-      - **Helper Triggered:** Calls `renderDungeonTrack(gameState)` to format the 10-slot dungeon track `|   |   | ... |`.
-      - **[v] Output:** Prints header `"Here Ready to Go"`, HP indicator, and empty preparation track to terminal.
-      -->
-    - **Step 5 [Input Listener Setup]:** `setupInputHandler(onKeyPress)` `[main.js]`
-      - **Does:** Configures `process.stdin` (sets UTF-8 encoding, enables raw mode if TTY, resumes stream) and attaches `data` event listener `handleInput`.
-      - **[v] Returns:** `cleanupInput` function closure to allow restoring terminal state.
-      -->
-    - **Step 6 [Interactive Event Loop / Key Press]:** User presses keyboard keys
-      - **Branch A [Key is SPACE (' ')]:**
-        - Calls `handleSpacebarAction(gameState)`:
-          - If status is `PREPARATION`: Advances status to `BATTLE` and sets `currentStage = 1`.
-          - If status is `BATTLE`: Deducts 7 HP (`heroHp - 7`). If `heroHp == 0` or `currentStage >= 10`, sets status to `RESULT`; otherwise advances `currentStage += 1`.
-        - Calls `renderScreen(gameState)`: Redraws terminal with updated HP, stage counter, and active battle slot `| H vs m |`.
-      - **Branch B [Key is 'q']:**
-        - Calls `cleanupInput()`: Sets `isListening = false`, detaches `stdin.off("data")`, disables raw mode, pauses stream, and exits.
-      -->
-    - **Step 7 [Final Outcome]:**
-      - **Outcome:** Player either defeats all 10 monsters and reaches `Final Result` screen, dies at `HP: 0`, or cleanly quits with `q`.
-
-    #### Part 2: Plain Human-Language Walkthrough
-    In simple terms, here is what happens when you run and play the game:
-    1. When you run `node main.js ulti`, the game first runs `parseSkillArg` to make sure you passed a valid skill name. If you forgot the skill, it prints an error and stops immediately.
-    2. Once verified, `createInitialState` sets up the starting game world. Behind the scenes, it calls `generateMonster` 10 times to randomly generate monsters for all 10 stages (with a 30% chance for a strong 2 HP monster 'M').
-    3. Next, `renderScreen` clears your terminal and uses `renderDungeonTrack` to draw the starting UI showing your 100 HP and an empty 10-slot track.
-    4. To listen to your keypresses in real-time without needing to press ENTER, `setupInputHandler` turns on raw mode on your terminal and begins listening for incoming keystrokes.
-    5. When you press **SPACEBAR**, `handleSpacebarAction` moves you from preparation into Stage 1. On every subsequent SPACEBAR hit, your hero attacks the monster, takes 7 damage, and steps forward into the next stage. After each hit, `renderScreen` immediately redraws the screen to show your new HP and the updated battle position (`| H vs m |`).
-    6. If your HP drops to 0 or you clear stage 10, the game switches to the final result screen. If you press **'q'**, the `cleanupInput` function safely turns off raw mode on your terminal and exits cleanly.
-    ```
-- **Continuous System Documentation (`FLOW.md`):** Update or create `FLOW.md` whenever a feature is introduced or modified:
-  - **How to Use:** Clear setup instructions, environment configurations, and run commands.
-  - **Architecture & Layer Map:** System layers, directory structure, and component boundaries.
-  - **Schema & Data Models:** Database tables, relations, and data structures (with entity diagrams where helpful).
-  - **Flow & Sequence (Learning Lifecycles):** End-to-end user journeys, request-response lifecycles, and data transformations.
-- **Simplicity & Clarity:** Keep all documentation, markdown files, and explanations ultra-simple, clear, and beginner-accessible (simple enough for anyone to grasp immediately). Avoid bloat and overly verbose text.
-
----
-
-## 7. Living Code Dictionary (`DICTIONARY.md`)
-
-- **Purpose & Scope:** Maintain a living, beginner-friendly dictionary/glossary file named `DICTIONARY.md` at the project root. It serves as a quick-lookup reference explaining every unfamiliar syntax, built-in function, standard library utility, framework method, and design pattern used in the codebase (e.g., Go's `r.Context()`, `defer`, `sync.WaitGroup`, channels, pointers; Rails' `has_secure_password`, `before_action`, `delegate`; Python's decorators, generators; JS/TS closures, `async/await`).
-- **Continuous Updating:** Whenever new concepts, functions, library utilities, or patterns are introduced to the project:
-  - Automatically add or update the entry in `DICTIONARY.md`.
-  - Keep definitions ultra-simple, intuitive, and easy to understand for learners without unnecessary academic jargon.
-- **Standard Dictionary Entry Format:**
-  - **Term / Function / Syntax:** The exact name of the concept (e.g., `r.Context()`, `context.Context`).
-  - **What It Is (Simple Terms):** Plain-language explanation of what it is and what it does.
-  - **Why We Use It Here:** Why it was chosen and its specific role in this codebase.
-  - **Quick Example / Analogy:** A tiny code snippet or simple analogy to make it immediately intuitive.
-  - **Common Pitfall:** One key mistake to avoid when using this concept.
+- **Simplicity & Clarity:** Keep all explanations, setup instructions, and walkthroughs clear, concise, and beginner-accessible. Avoid artificial bloat and overly verbose text.
 
 ---
 
