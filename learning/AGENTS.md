@@ -68,15 +68,16 @@ This document establishes universal development rules, coding standards, pedagog
 
 ## 5. Inline Code Comments & Standards
 
-- **Focus on Intent & Mechanics (Keep It Simple):**
-  - Avoid heavy, bloated multi-paragraph comments. Explain *why* something is done or any subtle mechanic in 1–2 plain-language lines.
-  - Do not state the obvious (e.g., avoid comments like `// increment i by 1`). Focus on intent, assumptions, and non-obvious behavior.
-- **Top-Level Definitions:**
-  - Provide a brief 1–2 line summary above key structs, classes, or exported functions explaining their core role.
-- **Unfamiliar Functions & Idioms:**
-  - When using standard library idioms or syntax that might trip up a learner (e.g., Go channels/defer, Python generators, JS closures), add a brief 1-line note explaining what it achieves under the hood.
+- **Balanced & Purposeful (Not Too Dense, Never Omitted):**
+  - Do not omit comments entirely, but do not crowd the code with comments on every line or dense multi-paragraph essays.
+  - Write concise, natural 1-line comments focusing on **intent and non-obvious logic** (the *why*, not the *what*).
+  - Never state the obvious (e.g., avoid `// increment i by 1` or `// return user`).
+- **Key Definitions:**
+  - Add a simple 1-line note above major structs, classes, or exported functions explaining what problem they solve.
+- **Tricky Syntax & Learner Gotchas:**
+  - Add a brief note when using non-obvious language features, subtle idioms, or edge cases (e.g., closures, goroutines/defer, generators).
 - **Ponytail Debt Markers:**
-  - When making deliberate simplifications with a known ceiling or future upgrade path, mark them with a clean `ponytail:` comment (e.g., `// ponytail: in-memory slice, upgrade to DB when persistent storage needed`).
+  - When making deliberate simplifications with a future upgrade path, mark them with a concise `ponytail:` comment (e.g., `// ponytail: in-memory store, replace with DB later`).
 
 ---
 
